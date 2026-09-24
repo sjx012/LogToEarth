@@ -94,7 +94,7 @@
   <div class="card">
     <p class="step">01 &nbsp;Paste route code</p>
     <label for="data">Route code</label>
-    <textarea id="data" spellcheck="false" placeholder="NAV1|YPPF-YPPF|YPPF,-34.78333,138.63333;SUB,-34.73667,138.71300,2500;SPR,-34.68333,138.86667,3500"></textarea>
+    <textarea id="data" spellcheck="false" placeholder="NAV1|YPPF-YPPF|0925|YPPF,-34.78333,138.63333;SUB,-34.73667,138.71300,2500;SPR,-34.68333,138.86667,3500"></textarea>
     <div class="row">
       <div>
         <label for="fname">File name</label>
@@ -148,11 +148,16 @@ function fixPair(lat, lon){
   return { lat: lat, lon: lon, swapped: false };
 }
 
-/* NAV1|route name|NAME,lat,lon[,altft];NAME,lat,lon[,altft];... */
+/* NAV1|route name|MMDD|NAME,lat,lon[,altft];...   (the date field may be left out) */
 function readNav1(text){
   var parts = String(text).trim().split("|");
   var name = (parts[1] || "NavLog Route").trim();
-  var body = parts.slice(2).join("|");
+  var date = null, bodyAt = 2;
+  if (/^\d{4}$/.test((parts[2] || "").trim())){   // four digits alone is the date, never a waypoint
+    date = parts[2].trim();
+    bodyAt = 3;
+  }
+  var body = parts.slice(bodyAt).join("|");
   var rows = [], skipped = [], swapped = false;
   var chunks = body.split(";");
   for (var i = 0; i < chunks.length; i++){
@@ -170,7 +175,7 @@ function readNav1(text){
   }
   var problems = [];
   if (!rows.length) problems.push("No waypoints found in the route code.");
-  return { kind: "nav1", routeName: name, rows: rows, skipped: skipped, swapped: swapped, problems: problems };
+  return { kind: "nav1", routeName: name, date: date, rows: rows, skipped: skipped, swapped: swapped, problems: problems };
 }
 
 /* Name / Lat / Long rows pasted straight from a sheet */
@@ -275,10 +280,15 @@ function show(msg, kind){
   s.className = "status" + (kind ? " " + kind : "");
 }
 
-var altTouched = false;
+var altTouched = false, fnameTouched = false;
 
 function refreshAltOption(){
   var parsed = readAny($("data").value);
+
+  if (!fnameTouched){                          // NAV_MMDD from the flight date in the code
+    $("fname").value = parsed.date ? "NAV_" + parsed.date + ".kml" : "route.kml";
+  }
+
   var has = parsed.rows.length > 0 && parsed.rows.some(function(r){ return r.alt !== null; });
   $("alt3d").disabled = !has;
   if (!altTouched) $("alt3d").checked = has;   // on by default once altitudes are present
@@ -335,6 +345,7 @@ function run(){
 $("make").addEventListener("click", run);
 $("data").addEventListener("input", refreshAltOption);
 $("alt3d").addEventListener("change", function(){ altTouched = true; });
+$("fname").addEventListener("input", function(){ fnameTouched = true; });
 $("data").addEventListener("keydown", function(e){
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
 });
