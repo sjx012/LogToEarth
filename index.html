@@ -342,6 +342,34 @@ function run(){
   show(rows.length + " waypoints" + (use3d ? ", 3D track" : "") + ". " + fname + " saved to your downloads.", "good");
 }
 
+/* A route code can arrive in the link: ...html#NAV1|... or ?r=NAV1|... */
+function codeFromLink(){
+  var raw = "";
+  try {
+    if (location.hash.length > 1) raw = location.hash.slice(1);
+    else {
+      var m = /[?&]r=([^&]+)/.exec(location.search);
+      if (m) raw = m[1];
+    }
+    if (!raw) return "";
+    try { raw = decodeURIComponent(raw.replace(/\+/g, " ")); } catch (e){}
+  } catch (e){ return ""; }
+  return raw.trim();
+}
+
+function loadFromLink(){
+  var code = codeFromLink();
+  if (!code) return;
+  $("data").value = code;
+  refreshAltOption();
+  var parsed = readAny(code);
+  if (parsed.problems.length) show(parsed.problems[0], "bad");
+  else {
+    show(parsed.rows.length + " waypoints loaded from the link. Click Create KML file.", "good");
+    $("make").focus();
+  }
+}
+
 $("make").addEventListener("click", run);
 $("data").addEventListener("input", refreshAltOption);
 $("alt3d").addEventListener("change", function(){ altTouched = true; });
@@ -349,6 +377,8 @@ $("fname").addEventListener("input", function(){ fnameTouched = true; });
 $("data").addEventListener("keydown", function(e){
   if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
 });
+window.addEventListener("hashchange", loadFromLink);
+loadFromLink();
 </script>
 </body>
 </html>
