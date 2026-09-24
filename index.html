@@ -311,7 +311,8 @@ function run(){
   }
 
   var use3d = $("alt3d").checked && !$("alt3d").disabled;
-  var kml = parsed.kind === "kml" ? parsed.passthrough : buildKml(rows, parsed.routeName, use3d);
+  var title = (parsed.date ? parsed.date + " " : "") + parsed.routeName;   // 1030 YPPF-YPPF
+  var kml = parsed.kind === "kml" ? parsed.passthrough : buildKml(rows, title, use3d);
 
   var body = $("tbl").tBodies[0];
   body.textContent = "";
