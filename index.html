@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LogToEarth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --paper:#ffffff; --ink:#373b41; --muted:#7c8189;
+    --accent:#5080ff; --accent-soft:rgba(80,128,255,.14);
+    --line:rgba(55,59,65,.14); --rule:#373b41;
+    --mono:"Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font:400 14.5px/1.65 var(--mono); font-variant-ligatures:none;
+  }
+  .wrap{max-width:780px; margin:0 auto; padding-block:34px 44px; padding-left:16px; padding-right:16px}
+
+  .masthead{padding-bottom:6px; margin-bottom:22px}
+  h1{font:700 clamp(21px,4.4vw,30px)/1.2 var(--mono); margin:0 0 6px; letter-spacing:-.02em; text-wrap:balance}
+  .credit{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:400}
+
+  .card{background:var(--paper); border:1px solid var(--line); border-radius:4px; padding:18px; margin-bottom:16px}
+  .step{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent);
+        font-weight:700; margin:0 0 14px}
+  label{display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+        color:var(--muted); font-weight:400; margin:0 0 6px}
+  textarea, input[type=text]{
+    width:100%; background:var(--paper); color:var(--ink); font:400 13.5px/1.6 var(--mono);
+    border:1px solid var(--line); border-radius:3px; padding:10px 11px;
+  }
+  textarea{min-height:120px; resize:vertical}
+  textarea::placeholder{color:var(--muted); opacity:.6}
+  textarea:focus-visible, input:focus-visible, button:focus-visible,
+  input[type=checkbox]:focus-visible, a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+  .row{display:flex; gap:14px; flex-wrap:wrap; align-items:end; margin-top:14px}
+  .row > div{flex:1 1 200px}
+  .check{display:flex; align-items:center; gap:9px; font-size:13px; margin-top:14px; cursor:pointer}
+  .check input{width:16px; height:16px; accent-color:var(--accent); cursor:pointer}
+  .check .off{color:var(--muted)}
+  .actions{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:16px}
+  button{
+    font:700 13px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
+    border-radius:3px; padding:12px 16px; border:1px solid var(--accent);
+    background:var(--accent); color:#fff;
+  }
+  button:disabled{opacity:.45; cursor:not-allowed}
+  .status{font-size:12.5px; color:var(--muted); min-height:18px}
+  .status.good{color:var(--accent); font-weight:700}
+  .status.bad{color:#c0392b; font-weight:700}
+
+  .results{margin-top:20px}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{text-align:left; padding:6px 10px; border-bottom:1px solid var(--line)}
+  th{font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  td{font-variant-numeric:tabular-nums}
+  td.wp{font-weight:700}
+  .scroll{overflow-x:auto}
+  .warn{background:var(--accent-soft); border-left:3px solid var(--accent); padding:9px 11px;
+        border-radius:0 3px 3px 0; font-size:12.5px; margin-top:14px}
+
+  ol.steps{margin:0 0 18px; padding-left:22px; color:var(--muted); font-size:13px}
+  ol.steps li{margin-bottom:6px}
+  ol.steps strong{color:var(--ink)}
+  .earth{
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+    background:var(--accent-soft); border:1px solid var(--accent); border-radius:4px;
+    padding:16px 18px; text-decoration:none; color:var(--ink);
+  }
+  .earth b{display:block; font-size:15px; color:var(--accent); letter-spacing:-.01em}
+  .earth span{font-size:12px; color:var(--muted)}
+  .earth .go{font-size:20px; color:var(--accent); font-weight:700}
+  @media (prefers-reduced-motion: no-preference){
+    button, .earth{transition:transform .06s ease}
+    button:active, .earth:active{transform:translateY(1px)}
+  }
+
+  footer{margin-top:22px; padding-top:12px; border-top:2px solid var(--rule); font-size:11.5px; color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <h1>NavLog to Google Earth</h1>
+    <div class="credit">Built by SJX12</div>
+  </div>
+
+  <div class="card">
+    <p class="step">01 &nbsp;Paste route code</p>
+    <label for="data">Route code</label>
+    <textarea id="data" spellcheck="false" placeholder="NAV1|YPPF-YPPF|YPPF,-34.78333,138.63333;SUB,-34.73667,138.71300,2500;SPR,-34.68333,138.86667,3500"></textarea>
+    <div class="row">
+      <div>
+        <label for="fname">File name</label>
+        <input type="text" id="fname" value="route.kml" autocomplete="off">
+      </div>
+    </div>
+    <label class="check" for="alt3d">
+      <input type="checkbox" id="alt3d" checked disabled>
+      <span id="alt3dLabel" class="off">Draw track at planned altitude (needs altitudes in the code)</span>
+    </label>
+    <div class="actions">
+      <button id="make">Create KML file</button>
+      <span class="status" id="status" role="status" aria-live="polite"></span>
+    </div>
+    <div class="warn" id="warn" hidden></div>
+    <div class="results" id="result" hidden>
+      <div class="scroll"><table id="tbl">
+        <thead><tr><th>#</th><th>Waypoint</th><th>Lat</th><th>Long</th><th>Alt ft</th></tr></thead>
+        <tbody></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="step">02 &nbsp;Open in Google Earth</p>
+    <ol class="steps">
+      <li>Open the left menu and choose <strong>Projects</strong>.</li>
+      <li>Click <strong>New project</strong>, then <strong>Import KML file</strong>.</li>
+    </ol>
+    <a class="earth" href="https://earth.google.com/web/" target="_blank" rel="noopener">
+      <span><b>earth.google.com</b><span>Opens in a new tab</span></span>
+      <span class="go">&rarr;</span>
+    </a>
+  </div>
+
+  <footer>Planning aid only. Check every waypoint against current charts before flight.</footer>
+</div>
+
+<script>
+/* ==== CORE-START ==== */
+var FT_TO_M = 0.3048;
+
+function esc(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function unesc(s){
+  return String(s).replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">").replace(/&quot;/g,'"');
+}
+function fixPair(lat, lon){
+  if (Math.abs(lat) > 90 && Math.abs(lon) <= 90) return { lat: lon, lon: lat, swapped: true };
+  return { lat: lat, lon: lon, swapped: false };
+}
+
+/* NAV1|route name|NAME,lat,lon[,altft];NAME,lat,lon[,altft];... */
+function readNav1(text){
+  var parts = String(text).trim().split("|");
+  var name = (parts[1] || "NavLog Route").trim();
+  var body = parts.slice(2).join("|");
+  var rows = [], skipped = [], swapped = false;
+  var chunks = body.split(";");
+  for (var i = 0; i < chunks.length; i++){
+    var c = chunks[i].trim();
+    if (!c) continue;
+    var f = c.split(",").map(function(s){ return s.trim(); });
+    if (f.length < 3){ skipped.push(c); continue; }
+    var lat = Number(f[1]), lon = Number(f[2]);
+    if (!isFinite(lat) || !isFinite(lon)){ skipped.push(c); continue; }
+    var fixed = fixPair(lat, lon);
+    if (fixed.swapped) swapped = true;
+    if (Math.abs(fixed.lat) > 90 || Math.abs(fixed.lon) > 180){ skipped.push(c); continue; }
+    var alt = f.length > 3 && isFinite(Number(f[3])) ? Number(f[3]) : null;
+    rows.push({ name: f[0] || ("WP" + (rows.length + 1)), lat: fixed.lat, lon: fixed.lon, alt: alt });
+  }
+  var problems = [];
+  if (!rows.length) problems.push("No waypoints found in the route code.");
+  return { kind: "nav1", routeName: name, rows: rows, skipped: skipped, swapped: swapped, problems: problems };
+}
+
+/* Name / Lat / Long rows pasted straight from a sheet */
+function readRows(text){
+  var rows = [], skipped = [], swapped = false;
+  var lines = String(text).replace(/\r/g, "").split("\n");
+  for (var i = 0; i < lines.length; i++){
+    var raw = lines[i];
+    if (!raw.trim()) continue;
+    var f = raw.indexOf("\t") >= 0 ? raw.split("\t") : raw.split(",");
+    f = f.map(function(s){ return s.trim().replace(/^"|"$/g, ""); });
+    if (f.every(function(s){ return s === "" || s === "-"; })) continue;
+    var name, a, b, alt = null;
+    if (f.length >= 3){ name = f[0]; a = Number(f[1]); b = Number(f[2]); if (f.length > 3 && f[3] !== "" && isFinite(Number(f[3]))) alt = Number(f[3]); }
+    else if (f.length === 2){ name = ""; a = Number(f[0]); b = Number(f[1]); }
+    else { skipped.push(raw.trim()); continue; }
+    if (!isFinite(a) || !isFinite(b)){ skipped.push(raw.trim()); continue; }
+    var fixed = fixPair(a, b);
+    if (fixed.swapped) swapped = true;
+    if (Math.abs(fixed.lat) > 90 || Math.abs(fixed.lon) > 180){ skipped.push(raw.trim()); continue; }
+    rows.push({ name: name || ("WP" + (rows.length + 1)), lat: fixed.lat, lon: fixed.lon, alt: alt });
+  }
+  var problems = [];
+  if (!rows.length) problems.push("Nothing readable found. Paste the route code from the nav log.");
+  return { kind: "rows", routeName: "NavLog Route", rows: rows, skipped: skipped, swapped: swapped, problems: problems };
+}
+
+/* A complete KML pasted in, saved through untouched */
+function readKml(text){
+  var kml = String(text).trim();
+  var problems = [];
+  if (/^\s*\{\\rtf/i.test(kml)) problems.push("This looks like rich text, not plain KML. Copy the cell again.");
+  if (!/<\/kml>\s*$/i.test(kml)) problems.push("The text does not end with </kml>, so the copy looks incomplete.");
+  if (!/<coordinates>/i.test(kml)) problems.push("No coordinates found, so the route is empty.");
+  var rows = [], m;
+  var pm = /<Placemark>([\s\S]*?)<\/Placemark>/gi;
+  while ((m = pm.exec(kml)) !== null){
+    var block = m[1];
+    if (!/<Point>/i.test(block)) continue;
+    var nameM = /<name>([\s\S]*?)<\/name>/i.exec(block);
+    var coordM = /<coordinates>([\s\S]*?)<\/coordinates>/i.exec(block);
+    if (!coordM) continue;
+    var p = coordM[1].trim().split(",");
+    var lon = Number(p[0]), lat = Number(p[1]);
+    if (!isFinite(lat) || !isFinite(lon)) continue;
+    rows.push({ name: nameM ? unesc(nameM[1]) : ("WP" + (rows.length + 1)), lat: lat, lon: lon, alt: null });
+  }
+  if (!rows.length && !problems.length) problems.push("No waypoint pins found in this KML.");
+  return { kind: "kml", routeName: "", rows: rows, skipped: [], swapped: false, problems: problems, passthrough: kml };
+}
+
+function readAny(text){
+  var t = String(text).trim();
+  if (/^NAV\d+\|/i.test(t)) return readNav1(t);
+  if (/<kml[\s>]/i.test(t) || /^<\?xml/i.test(t)) return readKml(t);
+  return readRows(t);
+}
+
+function buildKml(rows, routeName, use3d){
+  var n = esc(routeName || "NavLog Route");
+  var d5 = function(v){ return v.toFixed(5); };
+  var solid = use3d && rows.some(function(r){ return r.alt !== null; });
+  var filled = rows.map(function(r){ return r.alt; });
+  for (var i = 0; i < filled.length; i++){                 // carry a known altitude into gaps
+    if (filled[i] === null){
+      var back = null, fwd = null, j;
+      for (j = i - 1; j >= 0; j--) if (filled[j] !== null){ back = filled[j]; break; }
+      for (j = i + 1; j < filled.length; j++) if (rows[j].alt !== null){ fwd = rows[j].alt; break; }
+      filled[i] = back !== null ? back : (fwd !== null ? fwd : 0);
+    }
+  }
+  var coord = function(r, i){
+    return d5(r.lon) + "," + d5(r.lat) + "," + (solid ? Math.round(filled[i] * FT_TO_M) : 0);
+  };
+  var track = rows.map(coord).join(" ");
+  var pins = rows.map(function(r, i){
+    var label = r.alt !== null ? esc(r.name) + " " + r.alt + " ft" : esc(r.name);
+    return "<Placemark><name>" + label + "</name><styleUrl>#wp</styleUrl><Point>" +
+           (solid ? "<altitudeMode>absolute</altitudeMode><extrude>1</extrude>" : "") +
+           "<coordinates>" + coord(r, i) + "</coordinates></Point></Placemark>";
+  }).join("");
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + n + '</name>' +
+    '<Style id="rt"><LineStyle><color>ffff8050</color><width>3</width></LineStyle>' +
+    '<PolyStyle><color>40ff8050</color></PolyStyle></Style>' +
+    '<Style id="wp"><IconStyle><color>ff00c2ff</color><scale>1.1</scale>' +
+    '<Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon>' +
+    '<hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/></IconStyle>' +
+    '<LabelStyle><color>ff00c2ff</color></LabelStyle></Style>' +
+    '<Placemark><name>' + n + '</name><styleUrl>#rt</styleUrl><LineString>' +
+    (solid ? '<altitudeMode>absolute</altitudeMode><extrude>1</extrude>' : '<tessellate>1</tessellate>') +
+    '<coordinates>' + track + '</coordinates></LineString></Placemark>' +
+    pins + '</Document></kml>';
+}
+/* ==== CORE-END ==== */
+
+var $ = function(id){ return document.getElementById(id); };
+
+function show(msg, kind){
+  var s = $("status");
+  s.textContent = msg;
+  s.className = "status" + (kind ? " " + kind : "");
+}
+
+var altTouched = false;
+
+function refreshAltOption(){
+  var parsed = readAny($("data").value);
+  var has = parsed.rows.length > 0 && parsed.rows.some(function(r){ return r.alt !== null; });
+  $("alt3d").disabled = !has;
+  if (!altTouched) $("alt3d").checked = has;   // on by default once altitudes are present
+  $("alt3dLabel").className = has ? "" : "off";
+  $("alt3dLabel").textContent = has
+    ? "Draw track at planned altitude (3D)"
+    : "Draw track at planned altitude (needs altitudes in the code)";
+}
+
+function run(){
+  var parsed = readAny($("data").value);
+  var rows = parsed.rows;
+  var warn = $("warn");
+  warn.hidden = true; warn.textContent = "";
+
+  if (parsed.problems.length){
+    $("result").hidden = true;
+    show(parsed.problems[0], "bad");
+    return;
+  }
+
+  var use3d = $("alt3d").checked && !$("alt3d").disabled;
+  var kml = parsed.kind === "kml" ? parsed.passthrough : buildKml(rows, parsed.routeName, use3d);
+
+  var body = $("tbl").tBodies[0];
+  body.textContent = "";
+  rows.forEach(function(r, i){
+    var tr = body.insertRow();
+    tr.insertCell().textContent = i + 1;
+    var c1 = tr.insertCell(); c1.textContent = r.name; c1.className = "wp";
+    tr.insertCell().textContent = r.lat.toFixed(5);
+    tr.insertCell().textContent = r.lon.toFixed(5);
+    tr.insertCell().textContent = r.alt === null ? "-" : r.alt;
+  });
+  $("result").hidden = false;
+
+  var msgs = [];
+  if (parsed.swapped) msgs.push("Latitude and longitude looked reversed somewhere, so they were swapped.");
+  if (parsed.skipped.length) msgs.push(parsed.skipped.length + " entry(s) skipped: " + parsed.skipped.slice(0,2).map(function(s){ return '"' + s + '"'; }).join(", "));
+  if (rows.some(function(r){ return r.lat > 0; })) msgs.push("Some latitudes are positive, which puts them north of the equator. Australian waypoints should be negative.");
+  if (msgs.length){ warn.textContent = msgs.join(" "); warn.hidden = false; }
+
+  var fname = ($("fname").value || "route.kml").trim();
+  if (!/\.kml$/i.test(fname)) fname += ".kml";
+  var blob = new Blob([kml], { type: "application/vnd.google-earth.kml+xml" });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a");
+  a.href = url; a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+  show(rows.length + " waypoints" + (use3d ? ", 3D track" : "") + ". " + fname + " saved to your downloads.", "good");
+}
+
+$("make").addEventListener("click", run);
+$("data").addEventListener("input", refreshAltOption);
+$("alt3d").addEventListener("change", function(){ altTouched = true; });
+$("data").addEventListener("keydown", function(e){
+  if ((e.metaKey || e.ctrlKey) && e.key === "Enter") run();
+});
+</script>
+</body>
+</html>
