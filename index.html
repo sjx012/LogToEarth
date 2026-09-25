@@ -105,6 +105,10 @@
       <input type="checkbox" id="alt3d" checked disabled>
       <span id="alt3dLabel" class="off">Draw track at planned altitude (needs altitudes in the code)</span>
     </label>
+    <label class="check" for="mCall">
+      <input type="checkbox" id="mCall" checked>
+      <span>Mark 10 NM inbound call at each aerodrome</span>
+    </label>
     <div class="actions">
       <button id="make">Create KML file</button>
       <span class="status" id="status" role="status" aria-live="polite"></span>
@@ -170,8 +174,11 @@ function readNav1(text){
     var fixed = fixPair(lat, lon);
     if (fixed.swapped) swapped = true;
     if (Math.abs(fixed.lat) > 90 || Math.abs(fixed.lon) > 180){ skipped.push(c); continue; }
-    var alt = f.length > 3 && isFinite(Number(f[3])) ? Number(f[3]) : null;
-    rows.push({ name: f[0] || ("WP" + (rows.length + 1)), lat: fixed.lat, lon: fixed.lon, alt: alt });
+    var alt = f.length > 3 && f[3] !== "" && isFinite(Number(f[3])) ? Number(f[3]) : null;
+    var elev = f.length > 4 && f[4] !== "" && isFinite(Number(f[4])) ? Number(f[4]) : 0;
+    var nm = f[0] || ("WP" + (rows.length + 1));
+    var isAd = /\*$/.test(nm);                       // YPPF* marks an aerodrome
+    rows.push({ name: nm.replace(/\*$/, ""), lat: fixed.lat, lon: fixed.lon, alt: alt, ad: isAd, elev: elev });
   }
   var problems = [];
   if (!rows.length) problems.push("No waypoints found in the route code.");
@@ -234,7 +241,75 @@ function readAny(text){
   return readRows(t);
 }
 
-function buildKml(rows, routeName, use3d){
+/* Great-circle helpers, distances in nautical miles */
+var R_NM = 3440.065;
+function toRad(d){ return d * Math.PI / 180; }
+function toDeg(r){ return r * 180 / Math.PI; }
+function gcDist(a, b){
+  var p1 = toRad(a.lat), p2 = toRad(b.lat), dp = toRad(b.lat - a.lat), dl = toRad(b.lon - a.lon);
+  var h = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+  return 2 * R_NM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function gcBearing(a, b){
+  var p1 = toRad(a.lat), p2 = toRad(b.lat), dl = toRad(b.lon - a.lon);
+  return Math.atan2(Math.sin(dl) * Math.cos(p2),
+                    Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl));
+}
+/* point d NM from "from", heading towards "towards" */
+function gcAlong(from, towards, d){
+  var br = gcBearing(from, towards), ang = d / R_NM;
+  var p1 = toRad(from.lat), l1 = toRad(from.lon);
+  var p2 = Math.asin(Math.sin(p1) * Math.cos(ang) + Math.cos(p1) * Math.sin(ang) * Math.cos(br));
+  var l2 = l1 + Math.atan2(Math.sin(br) * Math.sin(ang) * Math.cos(p1),
+                           Math.cos(ang) - Math.sin(p1) * Math.sin(p2));
+  return { lat: toDeg(p2), lon: ((toDeg(l2) + 540) % 360) - 180 };
+}
+
+/* YPPF is class D, so the inbound call is made at a published VFR point, not at 10 NM */
+var CLASS_D_INBOUND = {
+  YPPF: {
+    east: { name: "DMW", full: "Dam Wall, eastern inbound", lat: -34.75833, lon: 138.72083 },
+    west: { name: "OHB", full: "Outer Harbor, western inbound", lat: -34.77500, lon: 138.48333 }
+  }
+};
+
+/* Inbound call and top of descent, on every leg that arrives at an aerodrome */
+function arrivalMarks(rows){
+  var marks = [];
+  for (var i = 1; i < rows.length; i++){
+    var ad = rows[i], prev = rows[i - 1];
+    if (!ad.ad) continue;
+    var leg = gcDist(prev, ad);
+    if (leg < 0.5) continue;
+    var special = CLASS_D_INBOUND[ad.name.toUpperCase()];
+    if (special){
+      var fromEast = Math.sin(gcBearing(ad, prev)) > 0;       // previous point lies east of the field
+      var pt = fromEast ? special.east : special.west;
+      if (prev.name.toUpperCase() !== pt.name){               // already routed via it, pin is there
+        marks.push({ kind: "call", lat: pt.lat, lon: pt.lon,
+                     label: "INBOUND " + ad.name,
+                     note: pt.full + ". Class D, so the call is made joining from class G." });
+      }
+    } else {
+      var call = gcAlong(ad, prev, Math.min(10, leg));
+      marks.push({ kind: "call", lat: call.lat, lon: call.lon,
+                   label: "10 NM INBOUND " + ad.name,
+                   note: (leg < 10 ? "Leg is only " + leg.toFixed(0) + " NM, placed at " + prev.name + "." : "") });
+    }
+    if (ad.alt === null) continue;
+    var drop = ad.alt - (ad.elev || 0);
+    if (drop <= 0) continue;
+    var tod = (drop / 1000) * 4 + 2;                       // thousands of feet x 4, plus 2
+    var at = gcAlong(ad, prev, Math.min(tod, leg));
+    marks.push({ kind: "tod", lat: at.lat, lon: at.lon, alt: ad.alt,
+                 label: "TOD " + ad.name + " " + tod.toFixed(0) + " NM",
+                 note: "Descend " + drop + " ft" + (ad.elev ? " to " + ad.elev + " ft elevation" : "") +
+                       (tod > leg ? ". Longer than the " + leg.toFixed(0) + " NM leg, placed at " + prev.name + "." : "") });
+  }
+  return marks;
+}
+
+function buildKml(rows, routeName, use3d, opts){
   var n = esc(routeName || "NavLog Route");
   var d5 = function(v){ return v.toFixed(5); };
   var solid = use3d && rows.some(function(r){ return r.alt !== null; });
@@ -257,6 +332,22 @@ function buildKml(rows, routeName, use3d){
            (solid ? "<altitudeMode>absolute</altitudeMode><extrude>1</extrude>" : "") +
            "<coordinates>" + coord(r, i) + "</coordinates></Point></Placemark>";
   }).join("");
+  opts = opts || {};
+  var marks = arrivalMarks(rows).filter(function(m){
+    return m.kind === "tod" ? !!opts.tod : !!opts.call;
+  });
+  var folder = "";
+  if (marks.length){
+    folder = '<Folder><name>Arrival marks</name>' + marks.map(function(m){
+      var is3d = solid && m.kind === "tod" && m.alt !== undefined;
+      return '<Placemark><name>' + esc(m.label) + '</name>' +
+             (m.note ? '<description>' + esc(m.note) + '</description>' : '') +
+             '<styleUrl>#' + (m.kind === "tod" ? 'tod' : 'call') + '</styleUrl><Point>' +
+             (is3d ? '<altitudeMode>absolute</altitudeMode><extrude>1</extrude>' : '') +
+             '<coordinates>' + d5(m.lon) + ',' + d5(m.lat) + ',' +
+             (is3d ? Math.round(m.alt * FT_TO_M) : 0) + '</coordinates></Point></Placemark>';
+    }).join("") + '</Folder>';
+  }
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + n + '</name>' +
     '<Style id="rt"><LineStyle><color>ffff8050</color><width>3</width></LineStyle>' +
@@ -265,10 +356,16 @@ function buildKml(rows, routeName, use3d){
     '<Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon>' +
     '<hotSpot x="0.5" y="0" xunits="fraction" yunits="fraction"/></IconStyle>' +
     '<LabelStyle><color>ff00c2ff</color></LabelStyle></Style>' +
+    '<Style id="call"><IconStyle><color>ff7ac74c</color><scale>1</scale>' +
+    '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/triangle.png</href></Icon></IconStyle>' +
+    '<LabelStyle><color>ff7ac74c</color><scale>0.85</scale></LabelStyle></Style>' +
+    '<Style id="tod"><IconStyle><color>ff3b5bff</color><scale>1</scale>' +
+    '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/donut.png</href></Icon></IconStyle>' +
+    '<LabelStyle><color>ff3b5bff</color><scale>0.85</scale></LabelStyle></Style>' +
     '<Placemark><name>' + n + '</name><styleUrl>#rt</styleUrl><LineString>' +
     (solid ? '<altitudeMode>absolute</altitudeMode><extrude>1</extrude>' : '<tessellate>1</tessellate>') +
     '<coordinates>' + track + '</coordinates></LineString></Placemark>' +
-    pins + '</Document></kml>';
+    pins + folder + '</Document></kml>';
 }
 /* ==== CORE-END ==== */
 
@@ -312,7 +409,11 @@ function run(){
 
   var use3d = $("alt3d").checked && !$("alt3d").disabled;
   var title = (parsed.date ? parsed.date + " " : "") + parsed.routeName;   // 1030 YPPF-YPPF
-  var kml = parsed.kind === "kml" ? parsed.passthrough : buildKml(rows, title, use3d);
+  var opts = { call: $("mCall").checked, tod: false };   // TOD off until aerodrome elevations exist
+  var kml = parsed.kind === "kml" ? parsed.passthrough : buildKml(rows, title, use3d, opts);
+  var markCount = parsed.kind === "kml" ? 0 : arrivalMarks(rows).filter(function(m){
+    return m.kind === "tod" ? opts.tod : opts.call;
+  }).length;
 
   var body = $("tbl").tBodies[0];
   body.textContent = "";
@@ -340,7 +441,8 @@ function run(){
   a.href = url; a.download = fname;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-  show(rows.length + " waypoints" + (use3d ? ", 3D track" : "") + ". " + fname + " saved to your downloads.", "good");
+  show(rows.length + " waypoints" + (markCount ? ", " + markCount + " arrival marks" : "") +
+       (use3d ? ", 3D track" : "") + ". " + fname + " saved to your downloads.", "good");
 }
 
 /* A route code can arrive in the link: ...html#NAV1|... or ?r=NAV1|... */
