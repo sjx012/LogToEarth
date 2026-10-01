@@ -648,8 +648,14 @@ function refreshAirspaceNote(){
 
 $("make").addEventListener("click", run);
 $("earthLink").addEventListener("click", function(){ this.classList.remove("nudge"); });
+/* the sheet pads the route code cell with spaces: drop them after a paste and show the code from its start */
+function tidyData(){
+  var box = $("data"), raw = box.value, clean = raw.replace(/^\s+|\s+$/g, "");
+  if (clean !== raw){ box.value = clean; box.setSelectionRange(clean.length, clean.length); }
+  box.scrollTop = 0;
+}
 ["change", "paste", "drop"].forEach(function(ev){
-  $("data").addEventListener(ev, function(){ setTimeout(refreshAltOption, 0); });
+  $("data").addEventListener(ev, function(){ setTimeout(function(){ tidyData(); refreshAltOption(); }, 0); });
 });
 window.addEventListener("pageshow", function(){ refreshAirspaceNote(); if ($("data").value.trim()) refreshAltOption(); });
 $("asCta").addEventListener("change", refreshAirspaceNote);
