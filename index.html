@@ -23,12 +23,12 @@
   }
   .wrap{max-width:780px; margin:0 auto; padding-block:34px 44px; padding-left:16px; padding-right:16px}
 
-  .masthead{padding-bottom:6px; margin-bottom:22px}
+  .masthead{padding-bottom:0px; margin-bottom:12px}
   h1{font:700 clamp(21px,4.4vw,30px)/1.2 var(--mono); margin:0 0 6px; letter-spacing:-.02em; text-wrap:balance}
-  .credit{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:400}
+  .credit{font-size:13.25px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:400}
 
   .card{background:var(--paper); border:1px solid var(--line); border-radius:4px; padding:18px; margin-bottom:16px}
-  .step{font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent);
+  .step{font-size:13.25px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent);
         font-weight:700; margin:0 0 14px}
   label{display:block; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
         color:var(--muted); font-weight:400; margin:0 0 6px}
@@ -42,13 +42,16 @@
   input[type=checkbox]:focus-visible, a:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
   .row{display:flex; gap:14px; flex-wrap:wrap; align-items:end; margin-top:14px}
   .row > div{flex:1 1 200px}
-  .check{display:flex; align-items:center; gap:9px; font-size:13px; margin-top:14px; cursor:pointer}
-  .check input{width:16px; height:16px; accent-color:var(--accent); cursor:pointer}
+  .check{display:flex; align-items:baseline; gap:10px; font-size:11.5px; margin-top:10px; cursor:pointer}
+  .check input{font:inherit; width:1em; height:1em; margin:0; flex:none; accent-color:var(--accent); cursor:pointer;
+               align-self:baseline; transform:translateY(calc(.5em - .5cap))}   /* box centre = middle of the capitals */
   .check .off{color:var(--muted)}
   .quote{font-size:11.5px; line-height:1.6; color:var(--muted); margin:0; padding-left:.62em; text-indent:-.62em}
   .quote::before{content:"\201C"; color:var(--accent); font-weight:700; margin-right:1px}
   .quote::after{content:"\201D"; color:var(--accent); font-weight:700; margin-left:1px}
-  .quote.as{margin:10px 0 0 25px}
+  .quote.as{margin:10px 0 0; padding:7px 10px 7px calc(10px + .62em); border-radius:3px;
+            background:rgba(220,59,59,.10); color:#8a3a35}
+  .quote.as::before, .quote.as::after{color:#dc3b3b}
   .actions{display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:16px}
   button{
     font:700 13px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; cursor:pointer;
@@ -83,12 +86,15 @@
   .earth .go{font-size:20px; color:var(--accent); font-weight:700}
   .earth-l{display:flex; align-items:center; gap:14px}
   .earth .ge{width:34px; height:34px; flex:none; display:block}
+  .earth.nudge{box-shadow:0 0 0 4px rgba(80,128,255,.35)}
+  @keyframes glow{0%,100%{box-shadow:0 0 0 0 rgba(80,128,255,0)} 50%{box-shadow:0 0 0 7px rgba(80,128,255,.38), 0 0 18px 2px rgba(80,128,255,.30)}}
   @media (prefers-reduced-motion: no-preference){
+    .earth.nudge{animation:glow .5s ease-in-out infinite}
     button, .earth{transition:transform .06s ease}
     button:active, .earth:active{transform:translateY(1px)}
   }
 
-  footer{margin-top:22px}
+  footer{margin-top:0px}
 </style>
 </head>
 <body>
@@ -101,7 +107,7 @@
   <div class="card">
     <p class="step">01 &nbsp;Paste route code</p>
     <label for="data">Route code</label>
-    <textarea id="data" spellcheck="false" placeholder="NAV1|YPPF-YPPF|0925|YPPF,-34.78333,138.63333;SUB,-34.73667,138.71300,2500;SPR,-34.68333,138.86667,3500"></textarea>
+    <textarea id="data" spellcheck="false" placeholder="NAV1|YPPF-YPPF|1030|YPPF,-34.78333,138.63333;SUB,-34.73667,138.71300,2500;SPR,-34.68333,138.86667,3500"></textarea>
     <div class="row">
       <div>
         <label for="fname">File name</label>
@@ -117,14 +123,14 @@
       <span>Mark 10 NM inbound call at each aerodrome</span>
     </label>
     <label class="check" for="asCta">
-      <input type="checkbox" id="asCta">
+      <input type="checkbox" id="asCta" checked>
       <span>Airspace (control zones and class C steps)</span>
     </label>
     <label class="check" for="asRes">
-      <input type="checkbox" id="asRes">
+      <input type="checkbox" id="asRes" checked>
       <span>Restricted and danger areas</span>
     </label>
-    <p class="quote as" id="asNote" hidden>Airspace data valid 09 July 2026 / 150 NM of YPPF<br>Always check the current ERSA</p>
+    <p class="quote as" id="asNote">Airspace data valid 09 July 2026 / 150 NM of YPPF / Always check the current ERSA</p>
     <div class="actions">
       <button id="make">Create KML file</button>
       <span class="status" id="status" role="status" aria-live="polite"></span>
@@ -144,7 +150,7 @@
       <li>Open the left menu and choose <strong>Projects</strong>.</li>
       <li>Click <strong>New project</strong>, then <strong>Import KML file</strong>.</li>
     </ol>
-    <a class="earth" href="https://earth.google.com/web/" target="_blank" rel="noopener">
+    <a class="earth" id="earthLink" href="https://earth.google.com/web/" target="_blank" rel="noopener">
       <span class="earth-l"><svg class="ge" viewBox="0 0 4481.832 4482.661" aria-hidden="true" focusable="false"><defs><radialGradient id="geGlow" cx="1034.8246" cy="4082.8464" r="25.2971" gradientTransform="matrix(176,0,0,-176,-181452.28,719258.56)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs><path fill="#255fdb" d="M 1545.47,2708.41 C 781.522,1697.707 -2.797,2465.729 201.941,3172.126 c 514.98,1126.319 1845.516,1621.908 2971.834,1106.928 388.227,-177.507 717.722,-462.139 949.765,-820.448 -590.532,553.099 -1662.86,460.662 -2578.07,-750.196 z"/><path fill="#4285f4" d="M 2228.44,2012.453 C 1177.757,418.858 0.004,1268.113 0.004,2241.638 -0.421,2564.056 69.083,2882.732 203.723,3175.691 63.921,2515.895 822.012,2007.106 1527.9,2954.146 c 1024.964,1375.106 2030.828,1133.189 2593.604,507.516 180.738,-277.449 297.472,-591.64 341.739,-919.793 v 4.329 C 4221.58,3295.886 3155.108,3417.863 2228.44,2012.453 Z"/><path fill="#91bfff" d="M 2948.588,1299.435 C 2168.343,12.183 1179.03,128.048 509.302,817.893 179.168,1218.827 -0.925,1722.277 0.004,2241.638 c 70.029,-942.202 1209.584,-1597.924 2240.914,0 916.738,1422.217 2058.84,1051.702 2221.306,308.635 v -7.13 c 14.218,-101.209 20.265,-203.399 18.08,-305.579 v -101.86 c -396.998,284.188 -919.03,174.434 -1531.716,-836.269 z"/><path fill="#c4e1ff" d="m 2953.936,1528.62 c 714.546,1148.723 1330.543,854.858 1527.896,609.121 -7.978,-171.708 -35.749,-341.922 -82.761,-507.261 -333.082,6.875 -410.75,-48.638 -738.483,-547.751 C 3159.692,315.216 2528.671,-202.996 1426.04,153.513 1068.788,293.635 753.238,522.671 509.302,818.912 1266.884,121.682 2196.354,310.887 2953.936,1528.62 Z"/><path fill="#f5f5f5" d="m 3611.695,1181.533 c 326.715,499.877 525.596,525.342 787.376,448.947 C 4059.649,438.263 2818.011,-253.065 1625.795,86.357 c -67.6,19.245 -134.258,41.656 -199.755,67.157 984.983,-310.673 1683.486,260.251 2185.655,1028.019 z"/><circle fill="url(#geGlow)" fill-opacity="0.1" cx="2240.918" cy="2241.638" r="2240.914"/><path fill="#ffffff" fill-opacity="0.2" d="m 2240.918,26.189 c 1232.656,0 2233.911,995.526 2240.914,2228.181 v -12.732 C 4481.832,1004.017 3478.539,0.724 2240.918,0.724 1003.297,0.724 0.004,1004.017 0.004,2241.638 v 12.732 C 7.006,1021.715 1008.262,26.189 2240.918,26.189 Z"/><path fill="#1a237e" fill-opacity="0.2" d="M 2240.918,4457.087 C 1008.262,4457.087 7.007,3461.561 0.004,2228.905 v 12.732 c 0,1237.623 1003.291,2240.914 2240.914,2240.914 1237.623,0 2240.914,-1003.291 2240.914,-2240.913 v -12.732 c -7.003,1232.655 -1008.259,2228.181 -2240.914,2228.181 z"/></svg><span><b>earth.google.com</b><span>Opens in a new tab</span></span></span>
       <span class="go">&rarr;</span>
     </a>
@@ -200,7 +206,7 @@ function readNav1(text){
     var alt = f.length > 3 && f[3] !== "" && isFinite(Number(f[3])) ? Number(f[3]) : null;
     var elev = f.length > 4 && f[4] !== "" && isFinite(Number(f[4])) ? Number(f[4]) : 0;
     var nm = f[0] || ("WP" + (rows.length + 1));
-    var isAd = /\*$/.test(nm);                       // YPPF* marks an aerodrome
+    var isAd = /\*$/.test(nm) || /^Y[A-Z]{3}$/i.test(nm);   // YPPF* or any Yxxx code is an aerodrome
     rows.push({ name: nm.replace(/\*$/, ""), lat: fixed.lat, lon: fixed.lon, alt: alt, ad: isAd, elev: elev });
   }
   var problems = [];
@@ -395,6 +401,63 @@ function airspaceBlocks(groups){
   return { styles: used ? AIRSPACE.styles : "", body: body, count: count };
 }
 
+/* Chart-style route marks: a short tick across the track every 10 NM along each leg
+   (counted from the start of the leg), and a double arrowhead early on the first leg. */
+var TICK_EVERY = 10, TICK_HALF = 0.5;              // NM, tick is 1 NM across
+var ARROW_LEN = 1.3, ARROW_WIDE = 1.6, ARROW_GAP = 1.1, ARROW_AT = 2.5;   // NM
+
+/* offset a point: "along" NM on bearing brg (radians), "right" NM to the right of it */
+function offsetNm(p, brg, along, right){
+  var n = along * Math.cos(brg) - right * Math.sin(brg);
+  var e = along * Math.sin(brg) + right * Math.cos(brg);
+  return { lat: p.lat + n / 60, lon: p.lon + e / (60 * Math.cos(toRad(p.lat))) };
+}
+
+function routeMarks(rows, filled, solid){
+  var d5 = function(v){ return v.toFixed(5); };
+  var altAt = function(i, t){ return solid ? Math.round((filled[i] + (filled[i + 1] - filled[i]) * t) * FT_TO_M) : 0; };
+  var pos = function(q, m){ return d5(q.lon) + "," + d5(q.lat) + "," + m; };
+  var mode = solid ? "<altitudeMode>absolute</altitudeMode>" : "<tessellate>1</tessellate>";
+  var ticks = "", count = 0;
+  for (var i = 0; i + 1 < rows.length; i++){
+    var a = rows[i], b = rows[i + 1], leg = gcDist(a, b);
+    for (var d = TICK_EVERY; d < leg - 0.5; d += TICK_EVERY){
+      var c = gcAlong(a, b, d), brg = gcBearing(c, b), m = altAt(i, d / leg);
+      ticks += "<LineString>" + mode + "<coordinates>" + pos(offsetNm(c, brg, 0, -TICK_HALF), m) + " " +
+               pos(offsetNm(c, brg, 0, TICK_HALF), m) + "</coordinates></LineString>";
+      count++;
+    }
+  }
+  var out = "";
+  if (count){
+    out += "<Placemark><name>10 NM marks</name><styleUrl>#tick</styleUrl><MultiGeometry>" + ticks +
+           "</MultiGeometry></Placemark>";
+  }
+  // direction arrows on the first leg that has any length
+  for (var k = 0; k + 1 < rows.length; k++){
+    var s = rows[k], t = rows[k + 1], len = gcDist(s, t);
+    if (len < 1) continue;
+    var scale = Math.min(1, len / 8);                        // shrink on a very short first leg
+    var L = ARROW_LEN * scale, W = ARROW_WIDE * scale, G = ARROW_GAP * scale;
+    var start = Math.min(ARROW_AT, len * 0.3);
+    var polys = "";
+    for (var j = 0; j < 2; j++){
+      var at = start + j * G, base = gcAlong(s, t, at), br = gcBearing(base, t), mm = altAt(k, (at + L / 2) / len);
+      var pts = [offsetNm(base, br, L, 0), offsetNm(base, br, 0, W / 2), offsetNm(base, br, L * 0.42, 0),
+                 offsetNm(base, br, 0, -W / 2)];
+      pts.push(pts[0]);
+      polys += "<Polygon>" + (solid ? "<altitudeMode>absolute</altitudeMode>" : "") +
+               "<outerBoundaryIs><LinearRing><coordinates>" +
+               pts.map(function(q){ return pos(q, mm); }).join(" ") +
+               "</coordinates></LinearRing></outerBoundaryIs></Polygon>";
+    }
+    out += "<Placemark><name>Direction</name><styleUrl>#arrow</styleUrl><MultiGeometry>" + polys +
+           "</MultiGeometry></Placemark>";
+    break;
+  }
+  return out;
+}
+
 function buildKml(rows, routeName, use3d, opts){
   var n = esc(routeName || "NavLog Route");
   var d5 = function(v){ return v.toFixed(5); };
@@ -424,7 +487,7 @@ function buildKml(rows, routeName, use3d, opts){
   });
   var folder = "";
   if (marks.length){
-    folder = '<Folder><name>Arrival marks</name>' + marks.map(function(m){
+    folder = '<Folder><name>Inbound calls</name><open>0</open>' + marks.map(function(m){
       var is3d = solid && m.kind === "tod" && m.alt !== undefined;
       return '<Placemark><name>' + esc(m.label) + '</name>' +
              (m.note ? '<description>' + esc(m.note) + '</description>' : '') +
@@ -439,6 +502,9 @@ function buildKml(rows, routeName, use3d, opts){
   return '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>' + n + '</name>' +
     air.styles +
+    '<Style id="tick"><LineStyle><color>ffff8050</color><width>3</width></LineStyle></Style>' +
+    '<Style id="arrow"><LineStyle><color>ffff8050</color><width>1</width></LineStyle>' +
+    '<PolyStyle><color>ffff8050</color><fill>1</fill><outline>1</outline></PolyStyle></Style>' +
     '<Style id="rt"><LineStyle><color>ffff8050</color><width>4.5</width></LineStyle>' +
     '<PolyStyle><color>40ff8050</color></PolyStyle></Style>' +
     '<Style id="wp"><IconStyle><color>ff00c2ff</color><scale>1.25</scale>' +
@@ -451,10 +517,13 @@ function buildKml(rows, routeName, use3d, opts){
     '<Style id="tod"><IconStyle><color>ff3b5bff</color><scale>1</scale>' +
     '<Icon><href>http://maps.google.com/mapfiles/kml/shapes/donut.png</href></Icon></IconStyle>' +
     '<LabelStyle><color>ff3b5bff</color><scale>0.85</scale></LabelStyle></Style>' +
-    '<Placemark><name>' + n + '</name><styleUrl>#rt</styleUrl><LineString>' +
+    '<Folder><name>Route ' + n + '</name><open>1</open>' +
+    '<Placemark><name>Track</name><styleUrl>#rt</styleUrl><LineString>' +
     (solid ? '<altitudeMode>absolute</altitudeMode><extrude>1</extrude>' : '<tessellate>1</tessellate>') +
     '<coordinates>' + track + '</coordinates></LineString></Placemark>' +
-    pins + folder + air.body + '</Document></kml>';
+    routeMarks(rows, filled, solid) +
+    '<Folder><name>Waypoints</name><open>0</open>' + pins + '</Folder>' +
+    folder + '</Folder>' + air.body + '</Document></kml>';
 }
 /* ==== CORE-END ==== */
 
@@ -496,6 +565,7 @@ function run(){
     return;
   }
 
+  refreshAltOption();                           // the text may have arrived without a typing event
   var use3d = $("alt3d").checked && !$("alt3d").disabled;
   var title = (parsed.date ? parsed.date + " " : "") + parsed.routeName;   // 1030 YPPF-YPPF
   var opts = { call: $("mCall").checked, tod: false,     // TOD off until aerodrome elevations exist
@@ -533,9 +603,19 @@ function run(){
   a.href = url; a.download = fname;
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-  show(rows.length + " waypoints" + (markCount ? ", " + markCount + " arrival marks" : "") +
+  show(rows.length + " waypoints" + (markCount ? ", " + markCount + (markCount === 1 ? " inbound call" : " inbound calls") : "") +
        (airCount ? ", " + airCount + " airspace areas" : "") +
-       (use3d ? ", 3D track" : "") + ". " + fname + " saved to your downloads.", "good");
+       (use3d ? ", 3D track" : "") + ".", "good");
+  goToEarthLink();
+}
+
+/* Next step is opening Google Earth, so bring that button into view */
+function goToEarthLink(){
+  var calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  setTimeout(function(){
+    $("earthLink").scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "center" });
+    $("earthLink").classList.add("nudge");          // glow until the button is used
+  }, 120);
 }
 
 /* A route code can arrive in the link: ...html#NAV1|... or ?r=NAV1|... */
@@ -571,6 +651,11 @@ function refreshAirspaceNote(){
 }
 
 $("make").addEventListener("click", run);
+$("earthLink").addEventListener("click", function(){ this.classList.remove("nudge"); });
+["change", "paste", "drop"].forEach(function(ev){
+  $("data").addEventListener(ev, function(){ setTimeout(refreshAltOption, 0); });
+});
+window.addEventListener("pageshow", function(){ refreshAirspaceNote(); if ($("data").value.trim()) refreshAltOption(); });
 $("asCta").addEventListener("change", refreshAirspaceNote);
 $("asRes").addEventListener("change", refreshAirspaceNote);
 $("data").addEventListener("input", refreshAltOption);
