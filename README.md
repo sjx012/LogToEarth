@@ -33,7 +33,7 @@ Works on Windows, macOS, iPad and Android in any modern browser.
 
 ## Route code format
 
-The nav log builds this for you. You only need it if you want to write one by hand.
+The nav log builds this for you.
 
 ```
 NAV1|YPPF-YPPF|0925|YPPF*,-34.78333,138.63333;SUB,-34.73667,138.71300,2500
